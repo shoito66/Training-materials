@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>音声認識</title> 
+
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<p>
+  <button onclick="start()">スタート</button>
+</p>
+
+<!-- モデル状態と結果を表示する部分（整えるためtableを使用） -->
+<table>
+  <tr>
+    <th>Status:</th>
+    <td id="status">Not started</td>
+  </tr>
+  <tr>
+    <th>Result:</th>
+    <td id="result"></td>
+  </tr>
+</table>
+<!-- partial -->
+  <script src='https://unpkg.com/ml5@latest/dist/ml5.min.js'></script>
+</body>
+<script>
+  async function start() {
+    // カメラからの映像ストリーム取得、はここでは必要ありません
+
+    // 音声認識モデルの変数定義だけ先に
+    let classifier;
+
+    // 繰り返し処理も先に準備しておきます
+    function loop() {
+      // ここで推論
+      classifier.classify(async (err, results) => {
+        // 結果の中身が入っているときだけ以下を実行
+        if (results) {
+          console.log(results);
+          // 確率をパーセントに変換
+          const percent = Math.round(10000 * results[0].confidence) / 100;
+          // 結果メッセージを作ります（ラベルとパーセンテージ）
+          const message = results[0].label + " (" + percent + "%)";
+          // HTMLに反映
+          document.getElementById("result").textContent = message;
+        }
+        // 推論終了1秒後にloop自身を実行（ループになる）
+        setTimeout(loop, 1000);
+      });
+    }
+
+    // ml5.js SoundClassifier
+    document.getElementById("status").textContent = "Model loading...";
+    classifier = ml5.soundClassifier(
+      "SpeechCommands18w", // ここにTeachable Machineのモデルを入れることもできます
+      {
+        // オプション（最も可能性の高いワードがこの確率以上のときに結果を更新出力する）
+        probabilityThreshold: 0.8
+      },
+      () => {
+        // モデル読み込み完了したらここが実行
+        document.getElementById("status").textContent = "Ready";
+        // 最初の繰り返し処理を実行（以後ループ）
+        loop();
+      }
+    );
+  }
+</script>
+</html>
